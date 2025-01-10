@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM SQL Agent</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .sidebar {
+            width: 250px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            border-right: 1px solid #dee2e6;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            display: flex;
+            justify-content: flex-start;  /* Align content to the left */
+        }
+        #sql-agent-content {
+            flex-grow: 1;  /* Allow it to take up remaining space */
+            max-width: 1200px;  /* Optional max width */
+            padding: 20px;  /* Padding around the content */
+        }
+        .nested-menu {
+            display: none;
+            list-style-type: none;
+            padding-left: 15px;
+        }
+        .nested-menu .nested-item {
+            padding-left: 10px;
+        }
+        .d-flex {
+            display: flex;
+            align-items: center;
+        }
+        .justify-content-end {
+            justify-content: flex-end;
+        }
+        .chat-box {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        #result-graph {
+            margin-top: 20px;
+            width: 100%;
+            height: 300px;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .hidden {
+            display: none;
+        }
+
+        .custom-header {
+                font-size: 25; 
+                font-weight: 700; 
+                color:darkcyan;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                padding: 10px 0;
+                border-bottom: 2px solid #007bff;               
+            }
+    </style>
+</head>
+<body>
+    
+    <div class="d-flex">
+        <div class="sidebar">
+
+            <nav>
+                <div class="container-fluid d-flex align-items-center">
+                    <span class="navbar-brand mb-0 h1 custom-header">LLM SQL Agent</span>
+                </div>
+            </nav>      
+                   
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link active text-primary" href="#" id="sql-agent-link"><i class="bi bi-file-earmark-code me-2"></i> SQL Agent</a></li>
+                <li class="nav-item">
+                    <a class="nav-link text-primary" href="#" id="analytics-agent-link"><i class="bi bi-bar-chart me-2"></i>Data Analytics Agent</a>
+                    <ul class="nested-menu" id="analytics-agent-menu">
+                        <li><a class="nav-link text-secondary" href="#" id="use-case-1-link"><i class="bi bi-clipboard-data me-2"></i>Analyze Application</a></li>
+                        <li><a class="nav-link text-secondary" href="#" id="use-case-2-link"><i class="bi bi-gear me-2"></i>Analyze AOR</a></li>
+                    </ul>
+                </li>
+                              
+                <li class="nav-item"><a class="nav-link text-primary" href="#"><i class="bi bi-table me-2"></i>Explore Tables</a></li>
+                <li class="nav-item"><a class="nav-link text-primary" href="#"><i class="bi bi-graph-up"></i><span class="ms-2">Explore Process</span></a></li>
+                
+                <li class="nav-item">
+                    <a class="nav-link text-primary" href="#" id="settings-link"><i class="bi bi-gear me-2"></i>Settings</a>
+                    <ul class="nested-menu" id="settings-menu">
+                        <li>
+                            <div class="form-group">
+                                <label for="project-select" class="form-label text-secondary">Project</label>
+                                <select class="form-select" id="project-select">
+                                    <option value="project1">Project1</option>
+                                    <option value="project2">Project2</option>
+                                </select>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-group">
+                                <label for="database-select" class="form-label text-secondary">Database</label>
+                                <select class="form-select" id="database-select">
+                                    <option value="database1">Database1</option>
+                                    <option value="database2">Database2</option>
+                                </select>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-group">
+                                <label for="tables-select" class="form-label text-secondary">Tables</label>
+                                <select class="form-select" id="tables-select">
+                                    <option value="table1">Table1</option>
+                                    <option value="table2">Table2</option>
+                                </select>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item"><a class="nav-link text-primary" href="#"><i class="bi bi-question-circle me-2"></i>Support</a></li>
+                <li class="nav-item"><a class="nav-link text-primary" href="#"><i class="bi bi-box-arrow-right me-2"></i><span>Log Out</span></a></li>
+            </ul>
+        </div>
+</div>
+        <div class="main-content"> 
+            <div id="sql-agent-content">
+                <h3 class="text-primary">Query & Result</h3>
+                <div class="d-flex align-items-center">
+                    <textarea class="form-control mb-3" id="query-box" rows="3" style="flex-grow: 1;"></textarea>
+                </div>
+                <div class="d-flex align-items-center mt-3">
+                    <button class="btn btn-primary me-2" id="run-query-btn">Run Query</button>
+                    <div class="d-flex ms-auto">
+                        <button class="btn btn-secondary me-2" id="clear-btn">
+                            <i class="bi bi-x-circle"></i> <!-- Font Awesome icon for clear -->
+                        </button>
+                        <button class="btn btn-info me-2" id="faq-btn">
+                            <i class="bi bi-question-circle"></i> <!-- Font Awesome icon for FAQ -->
+                        </button>
+                        <button class="btn btn-warning" id="table-details-btn">
+                            <i class="bi bi-table"></i> <!-- Font Awesome icon for table details -->
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#text-tab">Text</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#table-tab">Table</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#chart-tab">Chart</a></li>
+                    </ul>
+                    <div class="tab-content mt-2">
+                        <div class="tab-pane fade show active" id="text-tab">Results in text format...</div>
+                        <div class="tab-pane fade" id="table-tab">Results in table format...</div>
+                        <div class="tab-pane fade" id="chart-tab">Results in chart format...</div>
+                    </div>
+                </div>
+            </div>
+            <div id="use-case-1-content" class="hidden">
+                <div class="chat-box">
+                    <h5>Analyse Application</h5>
+                    <div class="form-group">
+                        <label for="last-name">Last Name</label>
+                        <input type="text" id="last-name" class="form-control" placeholder="Enter last name">
+                    </div>
+                    <div class="form-group">
+                        <label for="first-name">First Name</label>
+                        <input type="text" id="first-name" class="form-control" placeholder="Enter first name">
+                    </div>
+                    <div class="form-group">
+                        <label for="application-id">Application ID</label>
+                        <input type="text" id="application-id" class="form-control" placeholder="Enter application ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="reference-id">Reference ID</label>
+                        <input type="text" id="reference-id" class="form-control" placeholder="Enter reference ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <input type="date" id="dob" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" id="analyze-btn-1">Analyze</button>
+                </div>
+            </div>
+
+            <!-- Use Case 2 content -->
+            <div id="use-case-2-content" class="hidden">
+                <div class="chat-box">
+                    <h5>Analyse AOR</h5>
+                    <div class="form-group">
+                        <label for="hssid">HSSID</label>
+                        <input type="text" id="hssid" class="form-control" placeholder="Enter HSSID">
+                    </div>
+                    <div class="form-group">
+                        <label for="application-id-2">Application ID</label>
+                        <input type="text" id="application-id-2" class="form-control" placeholder="Enter application ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="reference-id-2">Reference ID</label>
+                        <input type="text" id="reference-id-2" class="form-control" placeholder="Enter reference ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="dob-2">Date of Birth</label>
+                        <input type="date" id="dob-2" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" id="analyze-btn-2">Analyze</button>
+                </div>
+            </div>
+
+            
+        </div>
+        
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle nested menu visibility
+        document.querySelector('#analytics-agent-link').addEventListener('click', function () {
+            const analyticsMenu = document.getElementById('analytics-agent-menu');
+            analyticsMenu.style.display = analyticsMenu.style.display === 'block' ? 'none' : 'block';
+             });
+                // Show Use Case 1 content and hide other use case content
+        document.querySelector('#use-case-1-link').addEventListener('click', function () {
+            document.getElementById('sql-agent-content').classList.add('hidden');
+            document.getElementById('use-case-1-content').classList.remove('hidden');
+            document.getElementById('use-case-2-content').classList.add('hidden');
+        });
+
+        // Show Use Case 2 content and hide other use case content
+        document.querySelector('#use-case-2-link').addEventListener('click', function () {
+            document.getElementById('sql-agent-content').classList.add('hidden');
+            document.getElementById('use-case-2-content').classList.remove('hidden');
+            document.getElementById('use-case-1-content').classList.add('hidden');
+
+        });
+
+            // Show SQL Agent content when clicking on SQL Agent menu item
+        document.querySelector('#sql-agent-link').addEventListener('click', function () {
+            // Show SQL Agent content
+            document.getElementById('sql-agent-content').classList.remove('hidden');
+            // Hide both use cases content
+            document.getElementById('use-case-1-content').classList.add('hidden');
+            document.getElementById('use-case-2-content').classList.add('hidden');
+        });
+
+        // Button actions for analysis
+        document.getElementById('analyze-btn-1').addEventListener('click', function() {
+            document.getElementById('result-graph').innerHTML = '<span>Graph for Application Analysis</span>';
+        });
+        document.getElementById('analyze-btn-2').addEventListener('click', function() {
+            document.getElementById('result-graph').innerHTML = '<span>Graph for AOR Analysis</span>';
+        });
+
+        document.querySelector('#settings-link').addEventListener('click', function () {
+            const settingsMenu = document.getElementById('settings-menu');
+            settingsMenu.style.display = settingsMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.querySelector('#project-link').addEventListener('click', function () {
+            const projectMenu = document.getElementById('project-menu');
+            projectMenu.style.display = projectMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.querySelector('#database-link').addEventListener('click', function () {
+            const databaseMenu = document.getElementById('database-menu');
+            databaseMenu.style.display = databaseMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.querySelector('#tables-link').addEventListener('click', function () {
+            const tablesMenu = document.getElementById('tables-menu');
+            tablesMenu.style.display = tablesMenu.style.display === 'block' ? 'none' : 'block';
+        });
+    </script>
+</body>
+</html>
